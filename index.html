@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detector Fake News - Futuristic</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #1e1e2f, #2a2a40);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #fff;
+            overflow: hidden;
+        }
+        .container {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 900px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: fadeIn 1.5s ease-in-out;
+        }
+        h1 {
+            text-align: center;
+            color: #00ff88;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #00ff88, 0 0 20px #00ff88;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        textarea:focus {
+            border-color: #00ff88;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: #00ff88;
+            color: #1e1e2f;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+        button:hover {
+            background-color: #00cc66;
+            transform: scale(1.05);
+        }
+        #results {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: slideIn 0.5s ease-in-out;
+        }
+        #results h2 {
+            color: #00ff88;
+            font-family: 'Orbitron', sans-serif;
+            text-shadow: 0 0 10px #00ff88, 0 0 20px #00ff88;
+        }
+        #results p, #results li {
+            color: #fff;
+        }
+        #results ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        #results li {
+            margin-bottom: 10px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Detector Fake News</h1>
+        <form id="analysisForm">
+            <textarea id="textInput" placeholder="Introduceți textul sau URL-ul pentru analiză..."></textarea>
+            <button type="submit">Analizează</button>
+        </form>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        document.getElementById('analysisForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const text = document.getElementById('textInput').value;
+            const resultsDiv = document.getElementById('results');
+            
+            resultsDiv.innerHTML = '<p>Se efectuează analiza...</p>';
+
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: text })
+            })
+            .then(response => response.json())
+            .then(data => {
+                let resultsHTML = `
+                    <h2>Rezultate Analiză:</h2>
+                    <p><strong>Știre Falsă:</strong> ${data.fake_news_prediction.label} (Probabilitate: ${(data.fake_news_prediction.confidence * 100).toFixed(2)}%)</p>
+                    <p><strong>Propagandă:</strong> ${data.propaganda_prediction.label} (Probabilitate: ${(data.propaganda_prediction.confidence * 100).toFixed(2)}%)</p>
+                    
+                    <h3>Emoții Detectate:</h3>
+                    <ul>
+                        ${Object.entries(data.emotions).map(([emotion, score]) => 
+                            `<li>${emotion}: ${score.toFixed(2)}%</li>`
+                        ).join('')}
+                    </ul>
+
+                    <h3>Narative Detectate:</h3>
+                    <ul>
+                        ${data.narrative.map(item => 
+                            `<li>${item.sentence}</li>`
+                        ).join('')}
+                    </ul>
+
+                    <h3>Tehnici de Manipulare:</h3>
+                    <ul>
+                        ${Object.entries(data.manipulation_techniques).map(([technique, details]) => 
+                            `<li>${technique.replace(/_/g, ' ')}: ${details.count} fragmente
+                                ${details.fragments.length > 0 ? 
+                                    `<ul>${details.fragments.map(frag => `<li>"${frag}"</li>`).join('')}</ul>` 
+                                    : ''
+                                }
+                            </li>`
+                        ).join('')}
+                    </ul>
+
+                    <p><strong>Limbă Detectată:</strong> ${data.language}</p>
+                `;
+
+                resultsDiv.innerHTML = resultsHTML;
+            })
+            .catch(error => {
+                console.error('Eroare:', error);
+                document.getElementById('results').innerHTML = '<p style="color: red;">A apărut o eroare la analiză.</p>';
+            });
+        });
+    </script>
+</body>
+</html>
