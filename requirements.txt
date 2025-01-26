@@ -1,0 +1,13 @@
+flask 
+torch 
+transformers 
+selenium 
+webdriver_manager 
+requests 
+beautifulsoup4 
+spacy 
+langdetect 
+telebot 
+openai 
+scikit-learn 
+nltk
